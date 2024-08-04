@@ -10,13 +10,11 @@ const items = true ? [] : [ new Item() ];
 
 let world = [ 1, 0, 0, 1, canvas.width*0.5, canvas.height*0.5 ];
 
-const zoom = (value) => {
+const zoom = (value, x, y) => {
 	world[0] *= value;
 	world[3] *= value;
-};
-
-const reverseProject = ([ x, y ]) => {
-	// TODO
+	world[4] = x - (x - world[4])*value;
+	world[5] = y - (y - world[5])*value;
 };
 
 const render = () => {
@@ -41,7 +39,7 @@ const main = async () => {
 let startClick = null;
 
 canvas.addEventListener('wheel', e => {
-	zoom(1 - e.deltaY*0.001);
+	zoom(1 - e.deltaY*0.001, e.offsetX, e.offsetY);
 	render();
 });
 
