@@ -53,6 +53,19 @@ export const rotateTransformInPlace = (t, angle, res = []) => {
 	return res;
 };
 
+export const rotateTransform = (t, angle, res = []) => {
+	const sin = Math.sin(angle);
+	const cos = Math.cos(angle);
+	const [ ix, iy, jx, jy, kx, ky ] = t;
+	res[0] = ix*cos - iy*sin;
+	res[1] = iy*cos + ix*sin;
+	res[2] = jx*cos - jy*sin;
+	res[3] = jy*cos + jx*sin;
+	res[4] = kx*cos - ky*sin;
+	res[5] = ky*cos + kx*sin;
+	return res;
+};
+
 export const translateTransform = (t, dx, dy, res = []) => {
 	const [ ix, iy, jx, jy, kx, ky ] = t;
 	res[0] = ix;
@@ -128,4 +141,24 @@ export const reverseTransform = (t, res = []) => {
 	res[4] -= aux[4];
 	res[5] -= aux[5];
 	return res;
+};
+
+export const subVec = ([ ax, ay ], [ bx, by ], res = new Array(2)) => {
+	res[0] = ax - bx;
+	res[1] = ay - by;
+	return res;
+};
+
+export const angleBetween = ([ ax, ay ], [ bx, by ]) => {
+	const la = Math.sqrt(ax**2 + ay**2);
+	ax /= la;
+	ay /= la;
+
+	const lb = Math.sqrt(bx**2 + by**2);
+	bx /= lb;
+	by /= lb;
+
+	const cos = ax*bx + ay*by;
+	const mag = by*ax - bx*ay < 0 ? -1 : 1;
+	return Math.acos(cos) * mag;
 };

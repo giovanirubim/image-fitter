@@ -11,20 +11,21 @@ export class ImageItem extends Item {
 		this.alpha = 1;
 		this.dots = [];
 	}
-	render(ctx = new CanvasRenderingContext2D(), world = []) {
+	render(ctx, world) {
 		const { img } = this;
 		T.combineTransforms(this.transform, world, t);
 		ctx.setTransform(...t);
 		ctx.globalAlpha = this.alpha;
 		ctx.drawImage(img, img.width*-0.5, img.height*-0.5);
+	}
+	drawDots(ctx, world) {
+		T.combineTransforms(this.transform, world, t);
 		for (let dot of this.dots) {
 			dot.render(ctx, t);
 		}
 	}
-	addDot(x, y, world) {
+	addDot(x, y) {
 		const v = [ x, y ];
-		T.reverseTransform(world, t);
-		T.applyTransform(v, t, v);
 		T.reverseTransform(this.transform, t);
 		T.applyTransform(v, t, v);
 		this.dots.push(new DotItem(...v));
