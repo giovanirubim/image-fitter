@@ -6,11 +6,15 @@ const canvas = document.querySelector('canvas');
 const ctx = canvas.getContext('2d');
 const items = true ? [] : [ new Item() ];
 
-let world = [ 1, 0, 0, 1, canvas.width*0.5, canvas.height*0.5 ];
+let editWidth = 800;
+let editHeight = 600;
+let world = [ 1, 0, 0, 1, editWidth*0.5, editHeight*0.5 ];
 let activeItem = null;
 let startClick = null;
 let command = null;
 let cursor = [ 0, 0 ];
+let opacity = 0.5;
+let previewOn = false;
 
 const ACTION = {
 	MOVE_FRAME:   'moveFrame',
@@ -31,7 +35,6 @@ const zoom = (value, x, y) => {
 
 const drawCursor = () => {
 	const [ x, y ] = T.applyTransform(cursor, world);
-	ctx.globalAlpha = 1;
 	ctx.lineCap = 'round';
 
 	ctx.setTransform(1, 0, 0, 1, x, y);
@@ -51,26 +54,30 @@ const drawCursor = () => {
 };
 
 const render = () => {
-	ctx.globalAlpha = 1;
 	ctx.setTransform(1, 0, 0, 1, 0, 0);
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
-	for (const item of items) {
-		item.render(ctx, world);
+	items[0].render(ctx, world);
+	ctx.globalAlpha = opacity;
+	items[1].render(ctx, world);
+	ctx.globalAlpha = 1;
+	if (!previewOn) {
+		drawCursor();
 	}
-	drawCursor();
 };
 
 const main = async () => {
 	items.push(
-		new Item(await loadImage('./img/img-1.png')),
-		new Item(await loadImage('./img/img-2.png')),
+		new Item(await loadImage('./img/base-image.png')),
+		new Item(await loadImage('./img/image.png')),
 	);
-	items[1].alpha = 0.5;
-	activeItem = items[0];
+	activeItem = items[1];
 	render();
 };
 
 canvas.addEventListener('wheel', e => {
+	if (previewOn) {
+		return;
+	}
 	zoom(1 - e.deltaY*0.001, e.offsetX, e.offsetY);
 	render();
 });
@@ -89,6 +96,7 @@ canvas.addEventListener('mousedown', e => {
 		return;
 	}
 	startClick = {
+		opacity,
 		action: e.shiftKey ? ACTION.MOVE_FRAME : command,
 		x: e.offsetX,
 		y: e.offsetY,
@@ -100,6 +108,7 @@ canvas.addEventListener('mousedown', e => {
 
 canvas.addEventListener('mousemove', e => {
 	if (!startClick) return;
+	if (previewOn) return;
 	if ((e.buttons & 1) === 0) {
 		startClick = null;
 		return;
@@ -149,6 +158,8 @@ canvas.addEventListener('mousemove', e => {
 			T.translateTransform(t, cursor[0], cursor[1], t);
 		} break;
 		case ACTION.OPACITY: {
+			const d = (e.offsetX - startClick.x) / editWidth;
+			opacity = Math.max(0, Math.min(1, startClick.opacity + d));
 		} break;
 	}
 	render();
@@ -160,7 +171,32 @@ canvas.addEventListener('dblclick', e => {
 	render();
 });
 
+const togglePreview = () => {
+	if (previewOn) {
+		canvas.width = editWidth;
+		canvas.height = editHeight;
+		world = [ 1, 0, 0, 1, editWidth/2, editHeight/2 ];
+		opacity = 0.5;
+		previewOn = false;
+	} else {
+		const { width, height } = items[0].img;
+		canvas.width = width;
+		canvas.height = height;
+		world = [ 1, 0, 0, 1, width/2, height/2 ];
+		opacity = 1;
+		startClick = null;
+		previewOn = true;
+	}
+	render();
+};
+
 window.addEventListener('keydown', e => {
+	if (e.code.endsWith('Enter')) {
+		togglePreview();
+	}
+	if (previewOn) {
+		return;
+	}
 	if (e.code === 'KeyM') {
 		command = ACTION.MOVE_IMAGE;
 	}
