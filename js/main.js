@@ -4,7 +4,7 @@ import { loadImage } from './load-image.js';
 
 const canvas = document.querySelector('canvas');
 const ctx = canvas.getContext('2d');
-const items = true ? [] : [ new Item() ];
+const items = new Array(2);
 
 let editWidth = 800;
 let editHeight = 600;
@@ -56,10 +56,14 @@ const drawCursor = () => {
 const render = () => {
 	ctx.setTransform(1, 0, 0, 1, 0, 0);
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
-	items[0].render(ctx, world);
-	ctx.globalAlpha = opacity;
-	items[1].render(ctx, world);
-	ctx.globalAlpha = 1;
+	if (items[0]) {
+		items[0].render(ctx, world);
+	}
+	if (items[1]) {
+		ctx.globalAlpha = opacity;
+		items[1].render(ctx, world);
+		ctx.globalAlpha = 1;
+	}
 	if (!previewOn) {
 		drawCursor();
 	}
@@ -174,7 +178,7 @@ const togglePreview = () => {
 		world = [ 1, 0, 0, 1, editWidth/2, editHeight/2 ];
 		opacity = 0.5;
 		previewOn = false;
-	} else {
+	} else if (items[0]) {
 		const { width, height } = items[0].img;
 		canvas.width = width;
 		canvas.height = height;
@@ -230,12 +234,26 @@ window.addEventListener('resize', e => {
 });
 
 const main = async () => {
-	items.push(
-		new Item(await loadImage('./img/base-image.png')),
-		new Item(await loadImage('./img/image.png')),
-	);
-	activeItem = items[1];
 	resizeCanvas();
 };
 
 main().catch(console.error);
+
+[ ...document.querySelectorAll('input[type="file"]') ].forEach((input, i) => {
+	input.addEventListener('input', e => {
+		const [ file ] = input.files;
+		if (!file) {
+			return;
+		}
+		const reader = new FileReader();
+		const img = document.createElement('img');
+		reader.onload = () => {
+			img.onload = () => {
+				items[i] = new Item(img);
+				render();
+			};
+			img.src = reader.result;
+		};
+		reader.readAsDataURL(file);
+	});
+});
