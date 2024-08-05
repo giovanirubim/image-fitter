@@ -1,10 +1,10 @@
 import * as T from './algebra.js';
-import { ImageItem } from './image-item.js';
+import { Item } from './image-item.js';
 import { loadImage } from './load-image.js';
 
 const canvas = document.querySelector('canvas');
 const ctx = canvas.getContext('2d');
-const items = true ? [] : [ new ImageItem() ];
+const items = true ? [] : [ new Item() ];
 
 let world = [ 1, 0, 0, 1, canvas.width*0.5, canvas.height*0.5 ];
 let activeItem = null;
@@ -19,6 +19,7 @@ const ACTION = {
 	SHEAR_X:      'shear-x',
 	SHEAR_Y:      'shear-y',
 	SCALE:        'scale',
+	OPACITY:      'opacity',
 };
 
 const zoom = (value, x, y) => {
@@ -55,17 +56,14 @@ const render = () => {
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
 	for (const item of items) {
 		item.render(ctx, world);
-		if (item === activeItem) {
-			item.drawDots(ctx, world);
-		}
 	}
 	drawCursor();
 };
 
 const main = async () => {
 	items.push(
-		new ImageItem(await loadImage('./img/img-1.png')),
-		new ImageItem(await loadImage('./img/img-2.png')),
+		new Item(await loadImage('./img/img-1.png')),
+		new Item(await loadImage('./img/img-2.png')),
 	);
 	items[1].alpha = 0.5;
 	activeItem = items[0];
@@ -150,6 +148,8 @@ canvas.addEventListener('mousemove', e => {
 			T.scaleTransform(t, b[0]/a[0], b[1]/a[1], t);
 			T.translateTransform(t, cursor[0], cursor[1], t);
 		} break;
+		case ACTION.OPACITY: {
+		} break;
 	}
 	render();
 });
@@ -175,6 +175,9 @@ window.addEventListener('keydown', e => {
 	}
 	if (e.code === 'KeyS') {
 		command = ACTION.SCALE;
+	}
+	if (e.code === 'KeyO') {
+		command = ACTION.OPACITY;
 	}
 });
 
