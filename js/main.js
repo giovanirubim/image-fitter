@@ -97,7 +97,7 @@ canvas.addEventListener('mousedown', e => {
 		y: e.offsetY,
 		vec: getEventVector(e),
 		world: [ ...world ],
-		transform: [ ...activeItem.transform ],
+		transform: activeItem && [ ...activeItem.transform ],
 	};
 });
 
@@ -250,6 +250,9 @@ main().catch(console.error);
 		reader.onload = () => {
 			img.onload = () => {
 				items[i] = new Item(img);
+				if (i === 1) {
+					activeItem = items[1];
+				}
 				render();
 			};
 			img.src = reader.result;
