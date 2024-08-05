@@ -1,5 +1,4 @@
 import * as T from './algebra.js';
-import { DotItem } from './dot-item.js';
 import { ImageItem } from './image-item.js';
 import { Item } from './item.js';
 import { loadImage } from './load-image.js';
@@ -30,7 +29,6 @@ const main = async () => {
 	items.push(
 		new ImageItem(await loadImage('./img/img-1.png')),
 		new ImageItem(await loadImage('./img/img-2.png')),
-		new DotItem(0, 0),
 	);
 	items[1].alpha = 0.5;
 	render();
@@ -67,6 +65,11 @@ canvas.addEventListener('mousemove', e => {
 		render();
 		return;
 	}
+});
+
+canvas.addEventListener('dblclick', e => {
+	items.at(-1).addDot(e.offsetX, e.offsetY, world);
+	render();
 });
 
 main().catch(console.error);
