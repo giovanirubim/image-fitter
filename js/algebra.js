@@ -1,4 +1,12 @@
-export const buildTransform = () => [ 1, 0, 0, 1, 0, 0 ];
+export const buildTransform = () => {
+	return [ 1, 0, 0, 1, 0, 0 ];
+};
+
+export const resetTransform = (t) => {
+	t[0] = t[3] = 1;
+	t[1] = t[2] = t[4] = t[5] = 0;
+	return t;
+};
 
 export const applyTransform = (v, t, res = []) => {
 	const [ x, y ] = v;
@@ -64,5 +72,60 @@ export const scaleTransformInPlace = (t, sx, sy, res = []) => {
 	res[3] = jy*sy;
 	res[4] = kx;
 	res[5] = ky;
+	return res;
+};
+
+export const scaleTransform = (t, sx, sy, res = []) => {
+	const [ ix, iy, jx, jy, kx, ky ] = t;
+	res[0] = ix*sx;
+	res[1] = iy*sy;
+	res[2] = jx*sx;
+	res[3] = jy*sy;
+	res[4] = kx*sx;
+	res[5] = ky*sy;
+	return res;
+};
+
+const copy = (src, dst, n) => {
+	for (let i=0; i<n; ++i) {
+		dst[i] = src[i];
+	}
+	return dst;
+};
+
+const setIYTo0 = (a, b) => {
+	const c = a[1]/a[0];
+
+	a[1] = 0;
+	a[3] -= a[2]*c;
+	a[5] -= a[4]*c;
+
+	b[1] -= b[0]*c;
+	b[3] -= b[2]*c;
+	b[5] -= b[4]*c;
+};
+
+const setJXTo0 = (a, b) => {
+	const c = a[2]/a[3];
+
+	a[0] -= a[1]*c;
+	a[2] = 0;
+	a[4] -= a[5]*c;
+
+	b[0] -= b[1]*c;
+	b[2] -= b[3]*c;
+	b[4] -= b[5]*c;
+};
+
+const aux = buildTransform();
+export const reverseTransform = (t, res = []) => {
+	copy(t, aux, 6);
+	resetTransform(res);
+	setIYTo0(aux, res);
+	setJXTo0(aux, res);
+	scaleTransform(res, 1/aux[0], 1/aux[3], res);
+	scaleTransform(aux, 1/aux[0], 1/aux[3], aux);
+	res[4] -= aux[4];
+	res[5] -= aux[5];
 	return res;
 };
