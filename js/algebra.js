@@ -184,3 +184,7 @@ export const shearYTransform = (t, value, res = []) => {
 	res[5] = ky + value*kx;
 	return res;
 };
+
+export const vecLen = ([ x, y ]) => {
+	return Math.sqrt(x**2 + y**2);
+};

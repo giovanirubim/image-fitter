@@ -144,13 +144,18 @@ canvas.addEventListener('mousemove', e => {
 			const a = T.subVec(startClick.vec, cursor);
 			const b = T.subVec(getEventVector(e), cursor);
 			const t = activeItem.transform;
+			const l = T.vecLen(a);
+			const sx = b[0]/a[0];
+			const sy = b[1]/a[1];
+			const px = Math.abs(a[0] / l);
+			const py = Math.abs(a[1] / l);
 			T.translateTransform(startClick.transform, -cursor[0], -cursor[1], t);
-			T.scaleTransform(t, b[0]/a[0], b[1]/a[1], t);
+			T.scaleTransform(t, (sx - 1)*px + 1, (sy - 1)*py + 1, t);
 			T.translateTransform(t, cursor[0], cursor[1], t);
 		} break;
 		case ACTION.OPACITY: {
 			const d = (e.offsetX - startClick.x) / editWidth;
-			opacity = Math.max(0, Math.min(1, startClick.opacity + d));
+			opacity = Math.max(0, Math.min(1, startClick.opacity + d*1.5));
 		} break;
 	}
 	render();
