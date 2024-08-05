@@ -162,3 +162,25 @@ export const angleBetween = ([ ax, ay ], [ bx, by ]) => {
 	const mag = by*ax - bx*ay < 0 ? -1 : 1;
 	return Math.acos(cos) * mag;
 };
+
+export const shearXTransform = (t, value, res = []) => {
+	const [ ix, iy, jx, jy, kx, ky ] = t;
+	res[0] = ix + value*iy;
+	res[1] = iy;
+	res[2] = jx + value*jy;
+	res[3] = jy;
+	res[4] = kx + value*ky;
+	res[5] = ky;
+	return res;
+};
+
+export const shearYTransform = (t, value, res = []) => {
+	const [ ix, iy, jx, jy, kx, ky ] = t;
+	res[0] = ix;
+	res[1] = iy + value*ix;
+	res[2] = jx;
+	res[3] = jy + value*jx;
+	res[4] = kx;
+	res[5] = ky + value*kx;
+	return res;
+};

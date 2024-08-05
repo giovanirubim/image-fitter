@@ -13,9 +13,12 @@ let command = null;
 let cursor = [ 0, 0 ];
 
 const ACTION = {
-	MOVE_FRAME: 'moveFrame',
-	MOVE_IMAGE: 'moveImage',
+	MOVE_FRAME:   'moveFrame',
+	MOVE_IMAGE:   'moveImage',
 	ROTATE_IMAGE: 'rotateImage',
+	SHEAR_X:      'shear-x',
+	SHEAR_Y:      'shear-y',
+	SCALE:        'scale',
 };
 
 const zoom = (value, x, y) => {
@@ -84,27 +87,17 @@ canvas.addEventListener('mousedown', e => {
 	if (e.button !== 0) {
 		return;
 	}
-	if (e.shiftKey) {
-		startClick = {
-			action: ACTION.MOVE_FRAME,
-			x: e.offsetX,
-			y: e.offsetY,
-			world: [ ...world ],
-		};
+	if (!command && !e.shiftKey) {
 		return;
 	}
-	if (activeItem === null) {
-		return;
-	}
-	if ([ ACTION.MOVE_FRAME, ACTION.ROTATE_IMAGE ].includes(command)) {
-		startClick = {
-			action: command,
-			x: e.offsetX,
-			y: e.offsetY,
-			vec: getEventVector(e),
-			transform: [ ...activeItem.transform ],
-		};
-	}
+	startClick = {
+		action: e.shiftKey ? ACTION.MOVE_FRAME : command,
+		x: e.offsetX,
+		y: e.offsetY,
+		vec: getEventVector(e),
+		world: [ ...world ],
+		transform: [ ...activeItem.transform ],
+	};
 });
 
 canvas.addEventListener('mousemove', e => {
@@ -113,21 +106,50 @@ canvas.addEventListener('mousemove', e => {
 		startClick = null;
 		return;
 	}
-	if (startClick.action === ACTION.MOVE_FRAME) {
-		const dx = e.offsetX - startClick.x;
-		const dy = e.offsetY - startClick.y;
-		T.translateTransform(startClick.world, dx, dy, world);
-	}
-	if (startClick.action === ACTION.MOVE_IMAGE) {
-		const dx = (e.offsetX - startClick.x) / world[0];
-		const dy = (e.offsetY - startClick.y) / world[3];
-		T.translateTransform(startClick.transform, dx, dy, activeItem.transform);
-	}
-	if (startClick.action === ACTION.ROTATE_IMAGE) {
-		const a = T.subVec(startClick.vec, cursor);
-		const b = T.subVec(getEventVector(e), cursor);
-		const angle = T.angleBetween(a, b);
-		T.rotateTransform(startClick.transform, angle, activeItem.transform);
+	switch (startClick.action) {
+		case ACTION.MOVE_FRAME: {
+			const dx = e.offsetX - startClick.x;
+			const dy = e.offsetY - startClick.y;
+			T.translateTransform(startClick.world, dx, dy, world);
+		} break;
+		case ACTION.MOVE_IMAGE: {
+			const dx = (e.offsetX - startClick.x) / world[0];
+			const dy = (e.offsetY - startClick.y) / world[3];
+			T.translateTransform(startClick.transform, dx, dy, activeItem.transform);
+		} break;
+		case ACTION.ROTATE_IMAGE: {
+			const a = T.subVec(startClick.vec, cursor);
+			const b = T.subVec(getEventVector(e), cursor);
+			const angle = T.angleBetween(a, b);
+			const t = activeItem.transform;
+			T.translateTransform(startClick.transform, -cursor[0], -cursor[1], t);
+			T.rotateTransform(t, angle, t);
+			T.translateTransform(t, cursor[0], cursor[1], t);
+		} break;
+		case ACTION.SHEAR_X: {
+			const a = T.subVec(startClick.vec, cursor);
+			const b = T.subVec(getEventVector(e), cursor);
+			const t = activeItem.transform;
+			T.translateTransform(startClick.transform, -cursor[0], -cursor[1], t);
+			T.shearXTransform(t, (b[0] - a[0])/a[1], t);
+			T.translateTransform(t, cursor[0], cursor[1], t);
+		} break;
+		case ACTION.SHEAR_Y: {
+			const a = T.subVec(startClick.vec, cursor);
+			const b = T.subVec(getEventVector(e), cursor);
+			const t = activeItem.transform;
+			T.translateTransform(startClick.transform, -cursor[0], -cursor[1], t);
+			T.shearYTransform(t, (b[1] - a[1])/a[0], t);
+			T.translateTransform(t, cursor[0], cursor[1], t);
+		} break;
+		case ACTION.SCALE: {
+			const a = T.subVec(startClick.vec, cursor);
+			const b = T.subVec(getEventVector(e), cursor);
+			const t = activeItem.transform;
+			T.translateTransform(startClick.transform, -cursor[0], -cursor[1], t);
+			T.scaleTransform(t, b[0]/a[0], b[1]/a[1], t);
+			T.translateTransform(t, cursor[0], cursor[1], t);
+		} break;
 	}
 	render();
 });
@@ -144,6 +166,15 @@ window.addEventListener('keydown', e => {
 	}
 	if (e.code === 'KeyR') {
 		command = ACTION.ROTATE_IMAGE;
+	}
+	if (e.code === 'KeyH') {
+		command = ACTION.SHEAR_X;
+	}
+	if (e.code === 'KeyV') {
+		command = ACTION.SHEAR_Y;
+	}
+	if (e.code === 'KeyS') {
+		command = ACTION.SCALE;
 	}
 });
 

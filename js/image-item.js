@@ -1,12 +1,10 @@
 import * as T from './algebra.js';
-import { DotItem } from './dot-item.js';
-import { Item } from './item.js';
 
 const t = T.buildTransform();
 
-export class ImageItem extends Item {
+export class ImageItem {
 	constructor(img = document.createElement('img')) {
-		super();
+		this.transform = T.buildTransform();
 		this.img = img;
 		this.alpha = 1;
 		this.dots = [];
@@ -28,7 +26,7 @@ export class ImageItem extends Item {
 		const v = [ x, y ];
 		T.reverseTransform(this.transform, t);
 		T.applyTransform(v, t, v);
-		this.dots.push(new DotItem(...v));
+		this.dots.push(v);
 		return this;
 	}
 }
