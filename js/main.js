@@ -65,15 +65,6 @@ const render = () => {
 	}
 };
 
-const main = async () => {
-	items.push(
-		new Item(await loadImage('./img/base-image.png')),
-		new Item(await loadImage('./img/image.png')),
-	);
-	activeItem = items[1];
-	render();
-};
-
 canvas.addEventListener('wheel', e => {
 	if (previewOn) {
 		return;
@@ -216,5 +207,30 @@ window.addEventListener('keydown', e => {
 		command = ACTION.OPACITY;
 	}
 });
+
+const resizeCanvas = () => {
+	editWidth = window.innerWidth;
+	editHeight = window.innerHeight;
+	if (previewOn) {
+		return;
+	}
+	canvas.width = editWidth;
+	canvas.height = editHeight;
+	world = [ 1, 0, 0, 1, editWidth/2, editHeight/2 ];
+	render();
+};
+
+window.addEventListener('resize', e => {
+	resizeCanvas();
+});
+
+const main = async () => {
+	items.push(
+		new Item(await loadImage('./img/base-image.png')),
+		new Item(await loadImage('./img/image.png')),
+	);
+	activeItem = items[1];
+	resizeCanvas();
+};
 
 main().catch(console.error);
