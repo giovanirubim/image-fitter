@@ -15,6 +15,7 @@ let command = null;
 let cursor = [ 0, 0 ];
 let opacity = 0.5;
 let previewOn = false;
+
 const baseColor = '#f70';
 const imageColor = '#07f';
 const pairs = [];
@@ -113,10 +114,11 @@ const render = () => {
 		image.render(ctx, world);
 		ctx.globalAlpha = 1;
 	}
-	if (!previewOn) {
-		drawPairs();
-		drawCursor();
+	if (previewOn) {
+		return;
 	}
+	drawPairs();
+	drawCursor();
 };
 
 canvas.addEventListener('wheel', e => {
@@ -234,6 +236,63 @@ const addPairDot = (e) => {
 	}
 };
 
+const calcErr = (t) => {
+	let sum = 0;
+	const v1 = [ 0, 0 ];
+	const v2 = [ 0, 0 ];
+	for (const [ a, b ] of pairs) {
+		if (!a || !b) continue;
+		T.applyTransform(a, baseImage.transform, v1);
+		T.applyTransform(b, t, v2);
+		sum += T.sqrVecDist(v1, v2);
+	}
+	return sum;
+};
+
+const mutateTransform = (transform, scale) => {
+	const t = [ ...transform ];
+	for (let i=0; i<3; ++i) {
+		const angle = Math.random() * Math.PI * 2;
+		const dx = Math.sin(angle) * scale;
+		const dy = Math.cos(angle) * scale;
+		t[i*2 + 0] += dx;
+		t[i*2 + 1] += dy;
+	}
+	return t;
+};
+
+let fitScale = 1;
+let fitInterval = null;
+const fitTransform = () => {
+	const n = 100;
+	let err = calcErr(image.transform);
+	for (let i=0; i<n; ++i) {
+		const t = mutateTransform(image.transform, fitScale);
+		const newErr = calcErr(t);
+		if (newErr < err) {
+			image.transform = t;
+			err = newErr;
+			fitScale *= 10;
+		} else {
+			fitScale *= 0.99;
+		}
+	}
+};
+
+const startFitInterval = () => {
+	if (fitInterval !== null) {
+		fitScale = 1;
+		return;
+	}
+	fitInterval = setInterval(() => {
+		const scale = fitScale;
+		fitTransform();
+		if (fitScale !== scale) {
+			render();
+		}
+	}, 100);
+};
+
 canvas.addEventListener('click', e => {
 	if (!e.ctrlKey || !image) {
 		return;
@@ -286,6 +345,12 @@ window.addEventListener('keydown', e => {
 	if (e.code === 'KeyO') {
 		command = ACTION.OPACITY;
 	}
+	if (e.code === 'KeyF') {
+		startFitInterval();
+	}
+	if (e.code.endsWith('0') && e.ctrlKey) {
+		resizeCanvas();
+	}
 });
 
 const resizeCanvas = () => {
@@ -320,6 +385,8 @@ const bindInputFile = (id, onload) => {
 };
 
 const main = async () => {
+	baseImage = new Item(await loadImage('./img/base-image.png'));
+	image = new Item(await loadImage('./img/image.png'));
 	resizeCanvas();
 };
 

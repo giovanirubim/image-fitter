@@ -188,3 +188,11 @@ export const shearYTransform = (t, value, res = []) => {
 export const vecLen = ([ x, y ]) => {
 	return Math.sqrt(x**2 + y**2);
 };
+
+export const sqrVecDist = ([ ax, ay ], [ bx, by ]) => {
+	return (ax - bx)**2 + (ay - by)**2;
+};
+
+export const vecDist = (a, b) => {
+	return Math.sqrt(sqrVecDist(a, b));
+};
