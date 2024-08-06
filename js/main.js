@@ -385,8 +385,6 @@ const bindInputFile = (id, onload) => {
 };
 
 const main = async () => {
-	baseImage = new Item(await loadImage('./img/base-image.png'));
-	image = new Item(await loadImage('./img/image.png'));
 	resizeCanvas();
 };
 
