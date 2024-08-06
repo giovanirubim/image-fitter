@@ -6,7 +6,6 @@ export class Item {
 	constructor(img = document.createElement('img')) {
 		this.transform = T.buildTransform();
 		this.img = img;
-		this.dots = [];
 	}
 	render(ctx, world) {
 		const { img } = this;

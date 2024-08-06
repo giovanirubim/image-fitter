@@ -4,17 +4,20 @@ import { loadImage } from './load-image.js';
 
 const canvas = document.querySelector('canvas');
 const ctx = canvas.getContext('2d');
-const items = new Array(2);
 
+let baseImage = null;
+let image = null;
 let editWidth = 800;
 let editHeight = 600;
 let world = [ 1, 0, 0, 1, editWidth*0.5, editHeight*0.5 ];
-let activeItem = null;
 let startClick = null;
 let command = null;
 let cursor = [ 0, 0 ];
 let opacity = 0.5;
 let previewOn = false;
+const baseColor = '#f70';
+const imageColor = '#07f';
+const pairs = [];
 
 const ACTION = {
 	MOVE_FRAME:   'moveFrame',
@@ -53,18 +56,65 @@ const drawCursor = () => {
 	ctx.stroke();
 };
 
+const projectPoint = ([ x, y ], { transform }) => {
+	const vec = [ x, y ];
+	T.applyTransform(vec, transform, vec);
+	T.applyTransform(vec, world, vec);
+	return vec;
+};
+
+const drawPoint = ([ x, y ], color) => {
+	const rad = 5;
+	ctx.fillStyle = color;
+	ctx.strokeStyle = '#fff';
+	ctx.beginPath();
+	ctx.arc(x, y, rad, 0, Math.PI*2);
+	ctx.fill();
+	ctx.stroke();
+};
+
+const drawLine = (a, b) => {
+	ctx.beginPath();
+	ctx.moveTo(...a);
+	ctx.lineTo(...b);
+
+	ctx.lineWidth = 3;
+	ctx.strokeStyle = '#fff';
+	ctx.stroke();
+
+	ctx.lineWidth = 1;
+	ctx.strokeStyle = '#000';
+	ctx.stroke();
+};
+
+const drawPairs = () => {
+	ctx.setTransform(1, 0, 0, 1, 0, 0);
+	for (const [ a, b ] of pairs) {
+		if (!b) drawPoint(projectPoint(a, baseImage), baseColor);
+		if (!a) drawPoint(projectPoint(b, image), imageColor);
+		if (a && b) {
+			const pa = projectPoint(a, baseImage);
+			const pb = projectPoint(b, image);
+			drawLine(pa, pb);
+			drawPoint(pa, baseColor);
+			drawPoint(pb, imageColor);
+		}
+	}
+};
+
 const render = () => {
 	ctx.setTransform(1, 0, 0, 1, 0, 0);
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
-	if (items[0]) {
-		items[0].render(ctx, world);
+	if (baseImage) {
+		baseImage.render(ctx, world);
 	}
-	if (items[1]) {
+	if (image) {
 		ctx.globalAlpha = opacity;
-		items[1].render(ctx, world);
+		image.render(ctx, world);
 		ctx.globalAlpha = 1;
 	}
 	if (!previewOn) {
+		drawPairs();
 		drawCursor();
 	}
 };
@@ -97,7 +147,7 @@ canvas.addEventListener('mousedown', e => {
 		y: e.offsetY,
 		vec: getEventVector(e),
 		world: [ ...world ],
-		transform: activeItem && [ ...activeItem.transform ],
+		transform: image && [ ...image.transform ],
 	};
 });
 
@@ -117,13 +167,13 @@ canvas.addEventListener('mousemove', e => {
 		case ACTION.MOVE_IMAGE: {
 			const dx = (e.offsetX - startClick.x) / world[0];
 			const dy = (e.offsetY - startClick.y) / world[3];
-			T.translateTransform(startClick.transform, dx, dy, activeItem.transform);
+			T.translateTransform(startClick.transform, dx, dy, image.transform);
 		} break;
 		case ACTION.ROTATE_IMAGE: {
 			const a = T.subVec(startClick.vec, cursor);
 			const b = T.subVec(getEventVector(e), cursor);
 			const angle = T.angleBetween(a, b);
-			const t = activeItem.transform;
+			const t = image.transform;
 			T.translateTransform(startClick.transform, -cursor[0], -cursor[1], t);
 			T.rotateTransform(t, angle, t);
 			T.translateTransform(t, cursor[0], cursor[1], t);
@@ -131,7 +181,7 @@ canvas.addEventListener('mousemove', e => {
 		case ACTION.SHEAR_X: {
 			const a = T.subVec(startClick.vec, cursor);
 			const b = T.subVec(getEventVector(e), cursor);
-			const t = activeItem.transform;
+			const t = image.transform;
 			T.translateTransform(startClick.transform, -cursor[0], -cursor[1], t);
 			T.shearXTransform(t, (b[0] - a[0])/a[1], t);
 			T.translateTransform(t, cursor[0], cursor[1], t);
@@ -139,7 +189,7 @@ canvas.addEventListener('mousemove', e => {
 		case ACTION.SHEAR_Y: {
 			const a = T.subVec(startClick.vec, cursor);
 			const b = T.subVec(getEventVector(e), cursor);
-			const t = activeItem.transform;
+			const t = image.transform;
 			T.translateTransform(startClick.transform, -cursor[0], -cursor[1], t);
 			T.shearYTransform(t, (b[1] - a[1])/a[0], t);
 			T.translateTransform(t, cursor[0], cursor[1], t);
@@ -147,7 +197,7 @@ canvas.addEventListener('mousemove', e => {
 		case ACTION.SCALE: {
 			const a = T.subVec(startClick.vec, cursor);
 			const b = T.subVec(getEventVector(e), cursor);
-			const t = activeItem.transform;
+			const t = image.transform;
 			const l = T.vecLen(a);
 			const sx = b[0]/a[0];
 			const sy = b[1]/a[1];
@@ -171,6 +221,27 @@ canvas.addEventListener('dblclick', e => {
 	render();
 });
 
+const addPairDot = (e) => {
+	const dot = getEventVector(e);
+	if (!pairs.length || pairs.at(-1)[1]) {
+		const inv = T.reverseTransform(baseImage.transform);
+		T.applyTransform(dot, inv, dot);
+		pairs.push([ dot, null ]);
+	} else {
+		const inv = T.reverseTransform(image.transform);
+		T.applyTransform(dot, inv, dot);
+		pairs.at(-1)[1] = dot;
+	}
+};
+
+canvas.addEventListener('click', e => {
+	if (!e.ctrlKey || !image) {
+		return;
+	}
+	addPairDot(e);
+	render();
+});
+
 const togglePreview = () => {
 	if (previewOn) {
 		canvas.width = editWidth;
@@ -178,8 +249,8 @@ const togglePreview = () => {
 		world = [ 1, 0, 0, 1, editWidth/2, editHeight/2 ];
 		opacity = 0.5;
 		previewOn = false;
-	} else if (items[0]) {
-		const { width, height } = items[0].img;
+	} else if (baseImage) {
+		const { width, height } = baseImage.img;
 		canvas.width = width;
 		canvas.height = height;
 		world = [ 1, 0, 0, 1, width/2, height/2 ];
@@ -229,34 +300,39 @@ const resizeCanvas = () => {
 	render();
 };
 
-window.addEventListener('resize', e => {
-	resizeCanvas();
-});
+window.addEventListener('resize', resizeCanvas);
 
-const main = async () => {
-	resizeCanvas();
-};
-
-main().catch(console.error);
-
-[ ...document.querySelectorAll('input[type="file"]') ].forEach((input, i) => {
+const bindInputFile = (id, onload) => {
+	const input = document.querySelector(`#${id}`);
 	input.addEventListener('input', e => {
 		const [ file ] = input.files;
 		if (!file) {
 			return;
 		}
 		const reader = new FileReader();
-		const img = document.createElement('img');
 		reader.onload = () => {
-			img.onload = () => {
-				items[i] = new Item(img);
-				if (i === 1) {
-					activeItem = items[1];
-				}
-				render();
-			};
+			const img = document.createElement('img');
+			img.onload = () => onload(img);
 			img.src = reader.result;
 		};
 		reader.readAsDataURL(file);
 	});
+};
+
+const main = async () => {
+	baseImage = new Item(await loadImage('./img/base-image.png'));
+	image = new Item(await loadImage('./img/image.png'));
+	resizeCanvas();
+};
+
+bindInputFile('base_image', img => {
+	baseImage = new Item(img);
+	render();
 });
+
+bindInputFile('image', img => {
+	image = new Item(img);
+	render();
+});
+
+main().catch(console.error);
