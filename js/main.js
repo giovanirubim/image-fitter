@@ -56,7 +56,7 @@ const drawCursor = () => {
 	ctx.stroke();
 };
 
-const projectPoint = ([ x, y ], { transform }) => {
+const projectPoint = ([ x, y ], transform) => {
 	const vec = [ x, y ];
 	T.applyTransform(vec, transform, vec);
 	T.applyTransform(vec, world, vec);
@@ -90,11 +90,11 @@ const drawLine = (a, b) => {
 const drawPairs = () => {
 	ctx.setTransform(1, 0, 0, 1, 0, 0);
 	for (const [ a, b ] of pairs) {
-		if (!b) drawPoint(projectPoint(a, baseImage), baseColor);
-		if (!a) drawPoint(projectPoint(b, image), imageColor);
+		if (!b) drawPoint(projectPoint(a, baseImage.transform), baseColor);
+		if (!a) drawPoint(projectPoint(b, image.transform), imageColor);
 		if (a && b) {
-			const pa = projectPoint(a, baseImage);
-			const pb = projectPoint(b, image);
+			const pa = projectPoint(a, baseImage.transform);
+			const pb = projectPoint(b, image.transform);
 			drawLine(pa, pb);
 			drawPoint(pa, baseColor);
 			drawPoint(pb, imageColor);
@@ -320,8 +320,6 @@ const bindInputFile = (id, onload) => {
 };
 
 const main = async () => {
-	baseImage = new Item(await loadImage('./img/base-image.png'));
-	image = new Item(await loadImage('./img/image.png'));
 	resizeCanvas();
 };
 
