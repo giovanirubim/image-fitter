@@ -106,7 +106,7 @@ const drawPairs = () => {
 const render = () => {
 	ctx.setTransform(1, 0, 0, 1, 0, 0);
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
-	if (baseImage) {
+	if (baseImage && !previewOn) {
 		baseImage.render(ctx, world);
 	}
 	if (image) {
